@@ -24,8 +24,8 @@ data ECParams = ECParams
   deriving (Eq,Show)
 
 -- | Number of \"parity\" chunks
-ecM :: ECParams -> Int           
-ecM params = _ecN params - _ecK params
+_ecM :: ECParams -> Int           
+_ecM params = _ecN params - _ecK params
 
 isValidECParams :: ECParams -> Bool
 isValidECParams (ECParams k n) = and

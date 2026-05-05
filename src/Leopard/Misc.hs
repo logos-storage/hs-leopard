@@ -108,6 +108,10 @@ maskRandomly k arr = do
   return $ listArray (u,v) 
     [ if b then Just x else Nothing | (x,b) <- zip (elems arr) (elems mask) ]
 
+-- | There will be @k@ @Nothing@-s in the resulting list
+maskListRandomly :: Int -> [a] -> IO [Maybe a]
+maskListRandomly k xs = elems <$> maskRandomly k (arrayFromList xs)
+
 -- | @randomBoolMask n k@ will give you @k@ falses and @(n-k)@ trues
 randomBoolMask :: Int -> Int -> IO (Array Int Bool)
 randomBoolMask n k = go k trues where

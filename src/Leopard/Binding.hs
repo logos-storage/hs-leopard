@@ -9,8 +9,10 @@ module Leopard.Binding where
 import Data.Word
 import Data.Array
 import Data.Maybe
+import Data.IORef
 
 import Control.Monad
+import System.IO.Unsafe
 
 import Foreign.C
 import Foreign.C.Types
@@ -64,13 +66,27 @@ decodeLeopardResult result = case result of
 --------------------------------------------------------------------------------
 -- * C++ bindings
 
-{-# NOINLINE initLeopard #-}
-initLeopard :: IO ()
-initLeopard = do
+{-# NOINLINE initLeopard' #-}
+initLeopard' :: IO ()
+initLeopard' = do
   res <- cpp_leo_init leo_VERSION
   if (res == 0)
     then return ()
     else fail "Leopard initialization failed"
+
+-- I just hope it's not a per-thread initialization... :)
+-- (then we would need `Map ThreadId Bool`)
+{-# NOINLINE theInitializedFlag #-}
+theInitializedFlag :: IORef Bool
+theInitializedFlag = unsafePerformIO (newIORef False)
+
+{-# NOINLINE initLeopard #-}
+initLeopard :: IO ()
+initLeopard = do
+  ok <- readIORef theInitializedFlag
+  unless ok $ do
+    initLeopard'
+    writeIORef theInitializedFlag True
 
 withLeopard :: IO a -> IO a
 withLeopard action = do
@@ -149,14 +165,14 @@ unsafeDecodeIO :: ECParams -> Array Int (Maybe ByteString) -> IO (Either Leopard
 unsafeDecodeIO ecParams@(ECParams k n) mbChunks = do
   let m = n - k
   work_cnt <- cpp_leo_decode_work_count (fromIntegral k) (fromIntegral m)
-  when (work_cnt == 0) $ fail "edeode: `leo_decode_work_count` claims invalid input"
+  when (work_cnt == 0) $ fail "decode: `leo_decode_work_count` claims invalid input"
   let work_cnt_int = fromIntegral work_cnt :: Int
 
   let nchunks       = arrayLength mbChunks
   let sizes         = map B.length (catMaybes $ elems mbChunks)
   let mb_chunk_size = isUniformList sizes
 
-  unless (n == nchunks)         $ fail "encode: we need exactly N encoded chunks"    
+  unless (n == nchunks)         $ fail "decode: we need exactly N encoded chunks"    
   unless (isJust mb_chunk_size) $ fail "decode: chunk size must be uniform"
 
   let chunk_size = fromJust mb_chunk_size
