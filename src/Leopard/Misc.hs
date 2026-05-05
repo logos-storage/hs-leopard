@@ -58,6 +58,9 @@ isDivisibleBy64 n = (mod n 64 == 0)
 roundUpToMultipleOf :: Int -> Int -> Int
 roundUpToMultipleOf size x = size * (ceilDiv x size)
 
+requiredPadToMultipleOf :: Int -> Int -> Int
+requiredPadToMultipleOf size x = roundUpToMultipleOf size x - x
+
 --------------------------------------------------------------------------------
 -- * Bytestrings
 

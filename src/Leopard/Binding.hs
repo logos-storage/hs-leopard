@@ -28,8 +28,7 @@ import Leopard.Misc
 -- * error handling
 
 data LeopardResult
-  = Success                           -- ^ Operation succeeded
-  | NeedMoreData                      -- ^ Not enough recovery data received
+  = NeedMoreData                      -- ^ Not enough recovery data received
   | TooMuchData                       -- ^ Buffer counts are too high
   | InvalidSize                       -- ^ Buffer size must be a multiple of 64 bytes
   | InvalidCounts                     -- ^ Invalid counts provided
@@ -40,7 +39,8 @@ data LeopardResult
 
 instance Enum LeopardResult where
 
-  toEnum ( 0)  = Success             -- Operation succeeded
+  fromEnum _ = error "LeopardResult/fromEnum: not implemented"
+
   toEnum (-1)  = NeedMoreData        -- Not enough recovery data received
   toEnum (-2)  = TooMuchData         -- Buffer counts are too high
   toEnum (-3)  = InvalidSize         -- Buffer size must be a multiple of 64 bytes
@@ -48,21 +48,18 @@ instance Enum LeopardResult where
   toEnum (-5)  = InvalidInput        -- A function parameter was invalid
   toEnum (-6)  = Platform            -- Platform is unsupported
   toEnum (-7)  = CallInitialize      -- Call leo_init() first 
-
   toEnum _     = error "invalid leopard error code"
 
-  fromEnum _ = error "LeopardResult/fromEnum: not implemented"
 
-decodeLeopardResult :: LeopardResult -> Maybe String
+decodeLeopardResult :: LeopardResult -> String
 decodeLeopardResult result = case result of
-  Success        -> Nothing  -- "Operation succeeded"
-  NeedMoreData   -> Just "Not enough recovery data received"
-  TooMuchData    -> Just "Buffer counts are too high"
-  InvalidSize    -> Just "Buffer size must be a multiple of 64 bytes"
-  InvalidCounts  -> Just "Invalid counts provided"
-  InvalidInput   -> Just "A function parameter was invalid"
-  Platform       -> Just "Platform is unsupported"
-  CallInitialize -> Just "Call leo_init() first"
+  NeedMoreData   -> "Not enough recovery data received"
+  TooMuchData    -> "Buffer counts are too high"
+  InvalidSize    -> "Buffer size must be a multiple of 64 bytes"
+  InvalidCounts  -> "Invalid counts provided"
+  InvalidInput   -> "A function parameter was invalid"
+  Platform       -> "Platform is unsupported"
+  CallInitialize -> "Call leo_init() first"
 
 --------------------------------------------------------------------------------
 -- * C++ bindings
@@ -93,6 +90,8 @@ unsafeEncodeIOList ecParams inputChunks = do
 --
 -- We assume that the chunks have a size which is a multiple of 64 bytes, as 
 -- the underlying `leopard` library assumes that too...
+--
+-- Also it is required that @K >= 2@
 --
 {-# NOINLINE unsafeEncodeIO #-}
 unsafeEncodeIO :: ECParams -> Array Int ByteString -> IO (Either LeopardResult (Array Int ByteString))
